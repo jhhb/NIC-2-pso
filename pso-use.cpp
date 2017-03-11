@@ -63,37 +63,90 @@ void runPSO();
 
 vector<double> evaluateSphereVector(vector<particle> particleVector);
 double evaluateSphereVector(particle z);
+double getMedian(vector<double> testResults);
 
 int main(){
-	//input parameters
-	cout << "Enter Problem:" << endl;
-	cin >> problem;
-	cout << "Enter Dimensions:" << endl;
-	cin >> numDimensions;
-	cout << "Enter particle count:" << endl;
-	cin >> numParticles;
-	cout << "Enter topology:" << endl;
-	cin >> top;
-	cout << "Enter number of iterations:" << endl;
-	cin >> numIterations;
 
-	setBounds();	//sets upper and lower position and velocity bounds specific to each problem
-	setTop();		//sets the neighborhood size var depending on which neighborhood type is being used
+	srand(time(0));
+
+	vector <string> problems;
+	vector <string> topologies;
+	vector <int> particleCounts;
+
+//	problems.push_back("rok");
+//	problems.push_back("ras");
+	problems.push_back("ack");
+
+//	topologies.push_back("ri");
+//	topologies.push_back("vn");
+//	topologies.push_back("ra");
+	topologies.push_back("gl");
+
+//	particleCounts.push_back(16);
+//	particleCounts.push_back(30);
+//	particleCounts.push_back(49);
+    particleCounts.push_back(50);
+	// how many times we want to run each one
+	int desiredTests = 110;
+
+	for (int i = 0; i < problems.size(); i++) {
+
+		for (int j = 0; j < topologies.size(); j++) {
+
+			for (int m = 0; m < particleCounts.size(); m++) {
+
+				vector<double> testResults;
+
+				for (int n = 0; n < desiredTests; n++) {
+                    cout<<n<<endl;
+					bestValueFound = DBL_MAX;
+
+					problem = problems.at(i);
+					numDimensions = 30;
+					numParticles = particleCounts.at(m);
+					top = topologies.at(j);
+					numIterations = 2000;
+
+					setBounds();	//sets upper and lower position and velocity bounds specific to each problem
+					setTop();		//sets the neighborhood size var depending on which neighborhood type is being used
 
 
-	genParticleVector();	//generates the particle vector
+					genParticleVector();	//generates the particle vector
 
-	if(top != "gl"){		//if the topology type is global, no need for neighborhoods
-		genNeighborhoods();
+					if(top != "gl"){		//if the topology type is global, no need for neighborhoods
+						genNeighborhoods();
+					}
+		
+		
+					for(int i = 0; i < numParticles; i++){	//initializes "neighborhoodBest" (nBest) vector
+						nBest.push_back(-1);
+					}
+
+					runPSO();
+					testResults.push_back(bestValueFound);
+                    cout<<"bestValueFound at iteration "<<n<<": "<<bestValueFound<<endl;
+				}
+
+				double medianResult;
+				medianResult = getMedian(testResults);
+				// You can easily change the format of the print outs here if you
+				// want to change it up and make excel easier
+				cout << "problem: " << problem;
+				cout << ", topology: " << top;
+				cout << ", numParticles: " << numParticles;
+				cout << " --- median best value of " << desiredTests << " tests = " << bestValueFound << endl;
+			}
+		}
 	}
-	
-	
-	for(int i = 0; i < numParticles; i++){	//initializes "neighborhoodBest" (nBest) vector
-		nBest.push_back(-1);
-	}
-
-	runPSO();
 }
+
+double getMedian(vector<double> testResults) {
+
+	sort(testResults.begin(), testResults.end());
+	int medIndex = testResults.size() / 2;
+	return testResults.at(medIndex);
+}
+
 
 void runPSO(){
 	for(int i = 0; i < numIterations; i++){
@@ -168,7 +221,7 @@ void performIteration(){
 	}
 
 
-	cout << endl << bestValueFound;
+	//cout << endl << bestValueFound;
 
 	vector<particle> partVectCopy = partVect;			//creates a copy of the particle vector so that all particles can be updated before the update "takes effect"
 	//actual update
