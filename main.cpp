@@ -79,8 +79,8 @@ double getMedian(vector<double> testResults);
 
 int main(int argc, char* argv[]){
     
-//    srand(time(0));
-//    
+    srand(time(0));
+//
 //    bestValueFound = DBL_MAX;
 //    
 //    top = argv[1];
