@@ -45,6 +45,10 @@ void performIteration();
 void getNBest();
 void genVN();
 
+void martinTests();
+
+double evaluateAckley(particle particleStruct);
+double evaluateRok(particle particleStruct);
 std::vector<double> evaluateRastriginVector(std::vector<particle> particleVector);
 std::vector<double> evaluateRokVector(std::vector<particle> particleVector);
 std::vector<double> evaluateAckleyVector(std::vector<particle> particleVector);
@@ -65,27 +69,55 @@ vector<double> evaluateSphereVector(vector<particle> particleVector);
 double evaluateSphereVector(particle z);
 double getMedian(vector<double> testResults);
 
-int main(){
+int main(int argc, char* argv[]){
 
 	srand(time(0));
+
+  	bestValueFound = DBL_MAX;
+
+	top = argv[1];
+	numParticles = atoi(argv[2]);
+	numIterations = atoi(argv[3]);
+	problem = argv[4];
+	numDimensions = atoi(argv[5]);
+
+	setBounds();
+	setTop();
+
+	genParticleVector();
+
+	if(top != "gl"){		//if the topology type is global, no need for neighborhoods
+		genNeighborhoods();
+	}
+
+	for(int i = 0; i < numParticles; i++){	//initializes "neighborhoodBest" (nBest) vector
+		nBest.push_back(-1);
+	}
+
+	runPSO();
+	cout<<bestValueFound<<endl;	
+}
+
+void martinTests(){
 
 	vector <string> problems;
 	vector <string> topologies;
 	vector <int> particleCounts;
 
-//	problems.push_back("rok");
-//	problems.push_back("ras");
+	problems.push_back("rok");
+	problems.push_back("ras");
 	problems.push_back("ack");
 
-//	topologies.push_back("ri");
-//	topologies.push_back("vn");
-//	topologies.push_back("ra");
+	topologies.push_back("ri");
+	topologies.push_back("vn");
+	topologies.push_back("ra");
 	topologies.push_back("gl");
 
-//	particleCounts.push_back(16);
-//	particleCounts.push_back(30);
-//	particleCounts.push_back(49);
+	particleCounts.push_back(16);
+	particleCounts.push_back(30);
+	particleCounts.push_back(49);
     particleCounts.push_back(50);
+
 	// how many times we want to run each one
 	int desiredTests = 110;
 
@@ -125,6 +157,11 @@ int main(){
 					runPSO();
 					testResults.push_back(bestValueFound);
                     cout<<"bestValueFound at iteration "<<n<<": "<<bestValueFound<<endl;
+
+                    nBest.clear();
+                    partVect.clear();
+                    //empty particle vector
+                    //empty nBest
 				}
 
 				double medianResult;
@@ -138,6 +175,7 @@ int main(){
 			}
 		}
 	}
+
 }
 
 double getMedian(vector<double> testResults) {
@@ -220,7 +258,6 @@ void performIteration(){
 		bestValueFound = evaluations[gBest];			//keeps track of best value discovered so far
 	}
 
-
 	//cout << endl << bestValueFound;
 
 	vector<particle> partVectCopy = partVect;			//creates a copy of the particle vector so that all particles can be updated before the update "takes effect"
@@ -229,7 +266,14 @@ void performIteration(){
 		for(int j = 0; j < numDimensions; j++){
 
 			//update formulas in paper from Majercik
-			partVect[i].velocity[j] = 0.7298 * (partVectCopy[i].velocity[j] + (phi1 * ((double)rand() / (double)RAND_MAX) * (partVectCopy[nBest[i]].position[j] - partVectCopy[i].position[j])) + (phi2 * ((double)rand() / (double)RAND_MAX) * (partVectCopy[gBest].position[j] - partVectCopy[i].position[j])));
+
+			// double firstPart = (phi1 * (double)rand()/(double)RAND_MAX) * (partVectCopy[nBest[i]].position[j] - partVectCopy[i].position[j]);
+			// double secondPart = (phi2 * (double)rand() / (double)RAND_MAX * (partVectCopy[gBest].position[j] - partVectCopy[i].position[j]));
+			// double result = 0.7298 * (partVectCopy[i].velocity[j] + firstPart + secondPart);
+			// partVect[i].velocity[j] = result;
+
+			 partVect[i].velocity[j] = 0.7298 * (partVectCopy[i].velocity[j] + (phi1 * ((double)rand() / (double)RAND_MAX) * (partVectCopy[nBest[i]].position[j] - partVectCopy[i].position[j])) 
+			 	+ (phi2 * ((double)rand() / (double)RAND_MAX) * (partVectCopy[gBest].position[j] - partVectCopy[i].position[j])));
 			
 			//keeping the velocity bounded
 			if(partVect[i].velocity[j] > uvbound){
@@ -341,7 +385,6 @@ int getIndexOfMinParticle(std::vector<double> vectorOfEvaluations){
 
 
 std::vector<double> evaluateRokVector(std::vector<particle> particleVector){
-
 	std::vector<double> vectorOfEvaluations;
 
 	for(int z = 0; z < particleVector.size(); z++){
@@ -593,4 +636,50 @@ void genVN(){
 		}
 	}
 	
+}
+
+double evaluateRok(particle particleStruct){
+
+	double evaluation = 0;
+
+	for(int i = 0; i < particleStruct.position.size()-1; i++){
+		double positionAtI = particleStruct.position[i];
+		double product = particleStruct.position[i+1] - positionAtI * positionAtI;
+
+		evaluation += (100 * (product * product) + (positionAtI -1) * (positionAtI - 1));
+	}
+
+	return evaluation;
+}
+
+double evaluateAckley(particle particleStruct){
+
+	double evaluation = 0;
+
+	double firstBracket = 0;
+	double secondBracket=0;
+
+	double finalSum = 0;
+
+
+	double PI = M_PI;
+
+	for(int i = 0; i < particleStruct.position.size(); i++){
+		double positionAtI = particleStruct.position[i];
+		firstBracket += (positionAtI * positionAtI);
+	}
+	firstBracket *= (1.00f / (double) particleStruct.position.size() );
+	firstBracket = sqrt(firstBracket);
+	firstBracket *= -0.2;
+	//std::cout<<firstBracket<<std::endl;
+
+	for(int i = 0; i < particleStruct.position.size(); i++){
+		secondBracket += cos(2 * PI * particleStruct.position[i]);
+	}
+	secondBracket *= (1.00f / (double) particleStruct.position.size());
+	//std::cout<<secondBracket<<std::endl;
+
+	finalSum = -20 * pow(EULER_CONSTANT, firstBracket) - pow(EULER_CONSTANT, secondBracket) + 20.00f + EULER_CONSTANT;
+
+	return finalSum;
 }
