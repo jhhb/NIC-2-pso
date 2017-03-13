@@ -31,6 +31,8 @@ string top;
 string problem;
 int nSize;
 
+string medians = "";
+std::vector<std::vector<double> > bestValuesForTestVectorOfVectors;
 
 struct particle{
     vector<double> position;
@@ -116,9 +118,9 @@ void martinTests(){
     vector <int> particleCounts;
     
     problems.push_back("ras");
-    problems.push_back("rok");
-    problems.push_back("sph");
-    problems.push_back("ack");
+   // problems.push_back("rok");
+    //problems.push_back("sph");
+   // problems.push_back("ack");
 
 
     topologies.push_back("ri");
@@ -126,13 +128,18 @@ void martinTests(){
     topologies.push_back("ra");
     topologies.push_back("gl");
     
-  //  particleCounts.push_back(16);
-  //  particleCounts.push_back(30);
-  //  particleCounts.push_back(49);
-    particleCounts.push_back(50);
+    numDimensions = 30;
+    numIterations = 10000;
+
+
+    
+   particleCounts.push_back(16);
+   particleCounts.push_back(30);
+   particleCounts.push_back(49);
+  //particleCounts.push_back(50);
     
     // how many times we want to run each one
-    int desiredTests = 21;
+    int desiredTests = 20;
     
     for (int i = 0; i < problems.size(); i++) {
         
@@ -147,10 +154,8 @@ void martinTests(){
                     bestValueFound = DBL_MAX;
                     
                     problem = problems.at(i);
-                    numDimensions = 30;
                     numParticles = particleCounts.at(m);
                     top = topologies.at(j);
-                    numIterations = 10000;
                     
                     setBounds();	//sets upper and lower position and velocity bounds specific to each problem
                     setTop();		//sets the neighborhood size var depending on which neighborhood type is being used
@@ -168,8 +173,8 @@ void martinTests(){
                     }
                     
                     runPSO();
+
                     testResults.push_back(bestValueFound);
-                    //cout<<"bestValueFound at iteration "<<n<<": "<<bestValueFound<<endl;
                     
                     nBest.clear();
                     partVect.clear();
@@ -179,6 +184,9 @@ void martinTests(){
                 
                 double medianResult;
                 medianResult = getMedian(testResults);
+                // for(int i = 0; i < testResults.size(); i++){
+                //     cout<<testResults[i]<<endl;
+                // }
                 
                 double averageResult = 0;
                 
@@ -186,15 +194,37 @@ void martinTests(){
                     averageResult += testResults[k];
                 }
                 averageResult = averageResult / testResults.size();
-                
+
+                std::vector<double> mediansForTenTests;
+
+
+
+                std::vector<double> mediansForPrinting;
+                for(int k = 0; k < bestValuesForTestVectorOfVectors[0].size(); k++){
+                    for(int z = 0; z < bestValuesForTestVectorOfVectors.size(); z++){
+                        mediansForTenTests.push_back(bestValuesForTestVectorOfVectors[z][k]);
+                    }
+                    mediansForPrinting.push_back(getMedian(mediansForTenTests));
+                    mediansForTenTests.clear();
+                }
+
                 // You can easily change the format of the print outs here if you
                 // want to change it up and make excel easier
-                cout << "problem: " << problem;
-                cout << ", topology: " << top;
-                cout << ", numParticles: " << numParticles;
-                cout << " --- median best value of " << desiredTests << " tests = " << medianResult << endl;
-                cout << " --- bestValueFound: "<<bestValueFound<<endl;
-                cout << " --- average best value of " <<desiredTests << " tests = " << averageResult << endl;
+                cout<<problem<<","<<top<<","<<numParticles<<","<<numDimensions<<","<<numIterations<<","<<averageResult<<","<<medianResult<<","<<
+                mediansForPrinting[0]<<","<<mediansForPrinting[1]<<","<<mediansForPrinting[2]<<","<<mediansForPrinting[3]<<","
+                <<mediansForPrinting[4]<<","<<mediansForPrinting[5]<<","<<mediansForPrinting[6]<<","<<mediansForPrinting[7]<<","
+                <<mediansForPrinting[8]<<","<<mediansForPrinting[9]<<","<<mediansForPrinting[10]<<endl;
+
+                // cout << "problem: " << problem;
+                // cout << ", topology: " << top;
+                // cout << ", numParticles: " << numParticles;
+                // cout << " --- median best value of " << desiredTests << " tests = " << medianResult << endl;
+                // cout << " --- bestValueFound: "<<bestValueFound<<endl;
+                // cout << " --- average best value of " <<desiredTests << " tests = " << averageResult << endl;
+
+                bestValuesForTestVectorOfVectors.clear();
+
+
             }
         }
     }
@@ -210,12 +240,20 @@ double getMedian(vector<double> testResults) {
 
 
 void runPSO(){
+    std::vector<double> bestValuesForTest;
+
     for(int i = 0; i < numIterations; i++){
         performIteration();
         if(top == "ra"){		//extra step when using random topology
             reRandomizeNeighborhoods();
         }
+        if(i % 1000 == 0){
+            bestValuesForTest.push_back(bestValueFound);
+        }
     }
+    bestValuesForTest.push_back(bestValueFound);
+
+    bestValuesForTestVectorOfVectors.push_back(bestValuesForTest);
 }
 
 void genParticleVector(){
