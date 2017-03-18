@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <math.h>
 #include <cfloat>
+#include <time.h>
 using namespace std;
 
 const double EULER_CONSTANT = exp(1.0);
@@ -82,32 +83,50 @@ double getMedian(vector<double> testResults);
 int main(int argc, char* argv[]){
     
     srand(time(0));
-//
-//    bestValueFound = DBL_MAX;
-//    
-//    top = argv[1];
-//    numParticles = atoi(argv[2]);
-//    numIterations = atoi(argv[3]);
-//    problem = argv[4];
-//    numDimensions = atoi(argv[5]);
-//    
-//    setBounds();
-//    setTop();
-//    
-//    genParticleVector();
-//    
-//    if(top != "gl"){		//if the topology type is global, no need for neighborhoods
-//        genNeighborhoods();
-//    }
-//    
-//    for(int i = 0; i < numParticles; i++){	//initializes "neighborhoodBest" (nBest) vector
-//        nBest.push_back(-1);
-//    }
-//    
-//    runPSO();
-//    cout<<bestValueFound<<endl;
 
-      martinTests();
+    bestValueFound = DBL_MAX;
+
+    top = argv[1];
+    numParticles = atoi(argv[2]);
+    numIterations = atoi(argv[3]);
+    problem = argv[4];
+    numDimensions = atoi(argv[5]);
+
+    clock_t start = clock();    
+
+    cout << "Topology: " << top << endl;
+    cout << "Swarm size: " << numParticles << endl;
+    cout << "Number of iterations: " << numIterations << endl;
+    cout << "Problem function: " << problem <<endl;
+    cout << "Number of dimensions: " << numDimensions <<endl;
+
+    setBounds();
+    setTop();
+
+    genParticleVector();
+
+    if(top != "gl"){		//if the topology type is global, no need for neighborhoods
+    genNeighborhoods();
+    }
+
+    for(int i = 0; i < numParticles; i++){	//initializes "neighborhoodBest" (nBest) vector
+    nBest.push_back(-1);
+    }
+
+    runPSO();
+
+    clock_t stop = clock();    
+    double elapsed = (double)(stop - start) * 1000.0f / CLOCKS_PER_SEC / 1000.0f;  
+
+    cout << "Elapsed time: " << elapsed << " seconds" << endl;
+    cout << endl;
+    cout << "Best value found: " << bestValueFound << endl;
+    cout << endl;
+
+    for(int i = 0; i < evaluations.size(); i++){
+        cout<<"Final value found for particle " << i << " = " <<evaluations[i] << endl;
+    }
+//     martinTests();
     
 }
 
@@ -134,12 +153,12 @@ void martinTests(){
 
     
    particleCounts.push_back(16);
-   particleCounts.push_back(30);
-   particleCounts.push_back(49);
+ //  particleCounts.push_back(30);
+ //  particleCounts.push_back(49);
   //particleCounts.push_back(50);
     
     // how many times we want to run each one
-    int desiredTests = 20;
+    int desiredTests = 1;
     
     for (int i = 0; i < problems.size(); i++) {
         
