@@ -9,6 +9,8 @@ using namespace std;
 
 const double EULER_CONSTANT = exp(1.0);
 
+
+// Global Variables
 int numDimensions;
 int numParticles;
 int numIterations;
@@ -23,15 +25,16 @@ double upbound;
 double lvbound;
 double uvbound;
 
-const int k = 5;
+const int k = 5; // size of random neighborhood
 
 double phi1 = 2.05;
 double phi2 = 2.05;
 
-string top;
-string problem;
-int nSize;
+string top; //topology as string
+string problem; //problem as string
+int nSize;  //neighborhood size
 
+// particle stuct houses current position and velocity, as well as neighborhood and personal bests
 struct particle{
     vector<double> position;
     vector<double> velocity;
@@ -45,6 +48,7 @@ struct particle{
 
 vector<particle> partVect;
 
+// FUNCTION DECLARATIONS
 void genParticleVector();
 void genNeighborhoods();
 void performIteration();
@@ -69,6 +73,11 @@ void setTop();
 
 void runPSO();
 
+
+
+// -------------------------------------------------------------------------------
+
+
 int main(int argc, char* argv[]){
 
     if(argc < 6){
@@ -77,9 +86,11 @@ int main(int argc, char* argv[]){
     }
     
     srand(time(0));
-
+    
     bestValueFound = DBL_MAX;
 
+    //getting arguments from command line
+    
     top = argv[1];
     numParticles = atoi(argv[2]);
     numIterations = atoi(argv[3]);
@@ -95,6 +106,7 @@ int main(int argc, char* argv[]){
     cout << "Problem function: " << problem <<endl;
     cout << "Number of dimensions: " << numDimensions <<endl;
 
+    // set bounds and topology based on command line
     setBounds();
     setTop();
     genParticleVector();
@@ -103,7 +115,7 @@ int main(int argc, char* argv[]){
     }
 
     for(int i = 0; i < numParticles; i++){	//initializes "neighborhoodBest" (nBest) vector
-    nBest.push_back(-1);
+        nBest.push_back(-1);
     }
 
     runPSO();
@@ -120,20 +132,14 @@ int main(int argc, char* argv[]){
     }    
 }
 
-void runPSO(){
-    for(int i = 0; i < numIterations; i++){
-        performIteration();
-        if(top == "ra"){		//extra step when using random topology
-            reRandomizeNeighborhoods();
-        }
-    }
-}
 
 //generates a vector of particles with randomized position and velocity within the bounds
 void genParticleVector(){
+    
     double posVal;
     double velVal;
     
+    // uses specific bounds from the problem to initialize the particles
     for(int i = 0; i < numParticles; i++){
         particle newParticle;
         for(int j = 0; j < numDimensions; j++){
@@ -147,8 +153,10 @@ void genParticleVector(){
     }
 }
 
-void genNeighborhoods(){		//wrapper function
-    if(top == "ri"){			//ring is short so I just wrote it here
+void genNeighborhoods(){		//neighborhoodwrapper function
+    
+    // horizontal neighbors and self
+    if(top == "ri"){			
         for(int i = 0; i < numParticles; i++){
             vector<int> neighborhood;
             if(i==0){
@@ -175,6 +183,21 @@ void genNeighborhoods(){		//wrapper function
     }else{cout << "ERROR";}
 }
 
+
+// -------------------------------------------------------------------------------
+
+// -------------------------------------------------------------------------------
+
+
+void runPSO(){
+    for(int i = 0; i < numIterations; i++){
+        performIteration();
+        if(top == "ra"){        //extra step when using random topology
+            reRandomizeNeighborhoods();
+        }
+    }
+}
+
 //wrapper function for a single iteration of PSO
 //includes getting function values, getting the best particle, gets neighborhood best, and then updates
 void performIteration(){
@@ -182,8 +205,9 @@ void performIteration(){
     evaluations = getErrors(partVect, problem);		//evaluations is a vector that stores to calculated value of each particle's position
     gBest = getIndexOfMinParticle(evaluations);		//gBest is the index of the global best particle
     getNBest();                                     //sets the nBest vector for all cases
-    double CONSTRICTION_FACTOR = 0.7298;
+    double CONSTRICTION_FACTOR = 0.7298; //from handout, never changes because phi values are constant
 
+    //update personal best value and position for each particle
     for(int i = 0; i < numParticles; i++){
         if(evaluations[i] < partVect[i].bestValue){
             partVect[i].bestValue = evaluations[i];
@@ -192,10 +216,10 @@ void performIteration(){
     }
 
     if(evaluations[gBest] < bestValueFound){
-        bestValueFound = evaluations[gBest];			//keeps track of best value discovered so far
+        bestValueFound = evaluations[gBest];	//keeps track of best value discovered so far
     }    
-    vector<particle> partVectCopy = partVect;			//creates a copy of the particle vector so that all particles can be updated before the update "takes effect"
-    //actual update
+    vector<particle> partVectCopy = partVect;	//creates a copy of the particle vector so that all particles can be updated before the update "takes effect"
+    //actual update of position
     for(int i = 0; i < numParticles; i++){
         for(int j = 0; j < numDimensions; j++){
             
@@ -216,9 +240,11 @@ void performIteration(){
 
 
 //finds the neighborhood best for global case and all other cases.
-void getNBest(){ 
+void getNBest(){
+
     vector<int> temp;
-    if(top  == "gl"){
+    
+    if(top  == "gl"){ // neighborhood best is just the global best value we already got
         for(int i = 0; i < numParticles; i++){
             temp.push_back(gBest);
             if(evaluations[gBest] < partVect[i].bestNeighborhoodValue){
@@ -228,10 +254,11 @@ void getNBest(){
         }
         nBest = temp;
     }else{
-        //else case
+        //else case, goes through each neighborhood and finds its best position
         int neighborhoodBest;
         for(int i = 0; i < numParticles; i++){
             neighborhoodBest = neighborhoods.at(i).at(0);
+            // update each particle and updates its neighborhood best value
             for(int j = 0; j < nSize; j++){
                 double currMin = evaluations[neighborhoodBest];
                 if(evaluations[neighborhoods.at(i).at(j)] < currMin){
@@ -249,18 +276,6 @@ void getNBest(){
     }
 }
 
-//function is a wrapper for evaluatin the right problem function
-std::vector<double> getErrors(std::vector<particle> particleVector, std::string problemName){
-    
-    if(problemName == "rok"){
-        return evaluateRokVector(particleVector);
-    }
-    else if(problemName == "ack"){
-        return evaluateAckleyVector(particleVector);
-    }
-
-    return evaluateRastriginVector(particleVector);
-}
 
 //returns index of particle with best value
 int getIndexOfMinParticle(std::vector<double> vectorOfEvaluations){
@@ -278,10 +293,28 @@ int getIndexOfMinParticle(std::vector<double> vectorOfEvaluations){
     return bestIndex;
 }
 
+// -------------------------------------------------------------------------------
+// FUNTION EVALUATIONS
+// -------------------------------------------------------------------------------
+
+//function is a wrapper for evaluating the right problem function
+std::vector<double> getErrors(std::vector<particle> particleVector, std::string problemName){
+    
+    if(problemName == "rok"){
+        return evaluateRokVector(particleVector);
+    }
+    else if(problemName == "ack"){
+        return evaluateAckleyVector(particleVector);
+    }
+
+    return evaluateRastriginVector(particleVector);
+}
+
 //returns a vector of evaluations for rosenbrock
 std::vector<double> evaluateRokVector(std::vector<particle> particleVector){
     std::vector<double> vectorOfEvaluations;
     
+    // for each particle
     for(int z = 0; z < particleVector.size(); z++){
         double evaluation = 0;
         
@@ -297,8 +330,6 @@ std::vector<double> evaluateRokVector(std::vector<particle> particleVector){
     return vectorOfEvaluations;
 }
 
-
-//evaluates correctly for two particles with x=8, y=8
 std::vector<double> evaluateAckleyVector(std::vector<particle> particleVector){
     
     double PI = M_PI;
@@ -312,7 +343,6 @@ std::vector<double> evaluateAckleyVector(std::vector<particle> particleVector){
     return vectorOfEvaluations;
 }
 
-//STATUS: should evaluate to 4 at x=2, and it does
 std::vector<double> evaluateRastriginVector(std::vector<particle> particleVector){
     
     
@@ -324,7 +354,6 @@ std::vector<double> evaluateRastriginVector(std::vector<particle> particleVector
     
     return vectorOfEvaluations;
 }
-
 
 double evaluateRastrigin(particle newParticle){
     
@@ -357,23 +386,24 @@ double evaluateAckley(particle particleStruct){
     firstBracket *= (1.00f / (double) particleStruct.position.size() );
     firstBracket = sqrt(firstBracket);
     firstBracket *= -0.2;
-    //std::cout<<firstBracket<<std::endl;
     
     for(int i = 0; i < particleStruct.position.size(); i++){
         secondBracket += cos(2 * PI * particleStruct.position[i]);
     }
     secondBracket *= (1.00f / (double) particleStruct.position.size());
-    //std::cout<<secondBracket<<std::endl;
     
     finalSum = -20.00f * pow(EULER_CONSTANT, firstBracket) - pow(EULER_CONSTANT, secondBracket) + 20.00f + EULER_CONSTANT;
     
     return finalSum;
 }
 
-//these functions should change the neighborhoods vector of vector of ints so that each index of neighborhoods
-//represents that particle's neighborhood. (i.e., if the vector of ints at index 0 of neighborhoods is equal to {0, 3, 56, 2}, then
-//we know that the particles indexed at 3, 56, and 2 in "partVect" are neighbors of the particle indexed at 0 in "partVect").
-//Each neighborhood should contain its own index (i.e., the vector of ints at index 0 of neighborhoods should contain 0.)
+// -------------------------------------------------------------------------------
+// END EVALUATIONS
+// -------------------------------------------------------------------------------
+
+// -------------------------------------------------------------------------------
+// GEN NEIGHBORHOODS
+// -------------------------------------------------------------------------------
 
 // populates the global var neighborhoods with random neighborhoods (no dupes in a neighborhood)
 void genRandomNeighborhoods(){
@@ -383,8 +413,10 @@ void genRandomNeighborhoods(){
         vector<int> neighborhood;
         neighborhood.push_back(i);
         
+        // k = size of random neighborhood
         while (neighborhood.size() < k) {
             int randomParticle = rand() % numParticles;
+            // check for dupes
             if (find(neighborhood.begin(), neighborhood.end(), randomParticle) == neighborhood.end()) {
                 neighborhood.push_back(randomParticle);
             }
@@ -394,8 +426,7 @@ void genRandomNeighborhoods(){
 }
 
 // call this on each iteration. It rerandomizes 20% of the random neighborhoods that already exist (from handout)
-// theres a chance i interpreted the handout wrong on this one because the wording is a little confusing
-// but i think its right
+
 void reRandomizeNeighborhoods() {
     
     for(int i = 0; i < numParticles; i++){
@@ -414,21 +445,8 @@ void reRandomizeNeighborhoods() {
     }
 }
 
-// function to print neighborhoods list
-void printNeighborhoods() {
-    
-    cout << "list of neighborhoods:" << endl;
-    for (int i = 0; i < numParticles; i++) {
-        cout << "neighborhood for particle " << i << ": ";
-        for (int j = 0; j < nSize; j++) {
-            cout << neighborhoods.at(i).at(j) << ",";
-        }
-        cout << endl;
-    }
-}
 
-// populates Neighbors with a VN topology. The special cases get a bit messy, but work.
-// some of the edge cases end up with duplicate neighbors, but this is fine and unavoidable really.
+// populates Neighbors with a VN topology. The special cases get a bit messy, but it works for populations of any size
 void genVN(){
     
     neighborhoods.clear();
@@ -442,6 +460,7 @@ void genVN(){
     //makes array with numParticles entries (all other entries are -1)
     int array[root][root];
     int particlesLeft = numParticles;
+
     for(int col = 0; col < root; col++){
         for(int row = 0; row < root; row++){
             if (particlesLeft > 0) {
@@ -519,8 +538,20 @@ void genVN(){
                 }
             }
         }
-    }
+    }   
+}
+
+// function to print neighborhoods list
+void printNeighborhoods() {
     
+    cout << "list of neighborhoods:" << endl;
+    for (int i = 0; i < numParticles; i++) {
+        cout << "neighborhood for particle " << i << ": ";
+        for (int j = 0; j < nSize; j++) {
+            cout << neighborhoods.at(i).at(j) << ",";
+        }
+        cout << endl;
+    }
 }
 
 
